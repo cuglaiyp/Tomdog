@@ -5,9 +5,9 @@ import java.nio.channels.SocketChannel;
 
 public class Acceptor implements Runnable{
 
-    private final Endpoint endpoint;
+    private final NioEndpoint endpoint;
 
-    public Acceptor(Endpoint endpoint) {
+    public Acceptor(NioEndpoint endpoint) {
         this.endpoint = endpoint;
     }
 

@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NioEndpoint implements Endpoint {
+public class NioEndpoint{
 
     public NioEndpoint() throws IOException {
         this.serverSocketChannel = ServerSocketChannel.open();
@@ -36,16 +36,17 @@ public class NioEndpoint implements Endpoint {
     }
 
 
-    @Override
     public SocketChannel serverSocketAccept() throws IOException {
         return serverSocketChannel.accept();
     }
 
-    @Override
     public boolean setSocketChannelOptions(SocketChannel socketChannel) {
         try {
             // 将socketChannel设置为非阻塞模式
             socketChannel.configureBlocking(false);
+
+
+
             //TODO 配置socket属性
             //Socket socket = socketChannel.socket();
             // 将socketChannel连同它需要的Buffer包装成Niochannel
