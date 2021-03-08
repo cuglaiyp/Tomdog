@@ -1,16 +1,15 @@
 package connect;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class NioChannel {
     private SocketChannel socketChannel;
-    private ByteBuffer buffer;
+    private SocketBufferHandler socketBufferHandler;
     private NioEndpoint.Poller poller;
 
-    public NioChannel(SocketChannel socketChannel, ByteBuffer buffer) {
+    public NioChannel(SocketChannel socketChannel, SocketBufferHandler socketBufferHandler) {
         this.socketChannel = socketChannel;
-        this.buffer = buffer;
+        this.socketBufferHandler = socketBufferHandler;
     }
 
     public void setPoller(NioEndpoint.Poller poller) {
@@ -21,8 +20,8 @@ public class NioChannel {
         return socketChannel;
     }
 
-    public ByteBuffer getBuffer() {
-        return buffer;
+    public SocketBufferHandler getSocketBufferHandler() {
+        return socketBufferHandler;
     }
 
     public NioEndpoint.Poller getPoller() {

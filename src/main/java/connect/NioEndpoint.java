@@ -50,7 +50,7 @@ public class NioEndpoint{
             //TODO 配置socket属性
             //Socket socket = socketChannel.socket();
             // 将socketChannel连同它需要的Buffer包装成Niochannel
-            NioChannel nioChannel = new NioChannel(socketChannel, ByteBuffer.allocate(8 * 1024));
+            NioChannel nioChannel = new NioChannel(socketChannel, new SocketBufferHandler(8*1024, 8*1024));
             // 设置好后，将我们的连接交给poller处理
             getPoller0().register(nioChannel);
             return true;
