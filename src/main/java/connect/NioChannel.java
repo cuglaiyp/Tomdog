@@ -6,6 +6,7 @@ public class NioChannel {
     private SocketChannel socketChannel;
     private SocketBufferHandler socketBufferHandler;
     private NioEndpoint.Poller poller;
+    private NioEndpoint.NioChannelWrapper nioChannelWrapper;
 
     public NioChannel(SocketChannel socketChannel, SocketBufferHandler socketBufferHandler) {
         this.socketChannel = socketChannel;
@@ -26,5 +27,9 @@ public class NioChannel {
 
     public NioEndpoint.Poller getPoller() {
         return poller;
+    }
+
+    public void setNioChannelWrapper(NioEndpoint.NioChannelWrapper nioChannelWrapper) {
+        this.nioChannelWrapper = nioChannelWrapper;
     }
 }
