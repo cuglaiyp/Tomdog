@@ -244,7 +244,25 @@ public class NioEndpoint{
             SocketBufferHandler socketBufferHandler = nioChannel.getSocketBufferHandler();
             // 首先要将socketBufferHandler中的readBuffer切换成读模式
             socketBufferHandler.configureReadBufferForRead();
+            int nRead = transfer(socketBufferHandler.getReadBuffer(), byteBuffer);
+            return nRead;
+        }
 
+        private int transfer(ByteBuffer from, ByteBuffer to) {
+            // 这个时候to是写模式，remaining肯定是特别大的；from是读模式，remaining比较小。所以max一定是取到from的值
+            // 什么情况会取到to的remaining呢？那就是当to中还没有使用的数据特别多的时候，这个时候remaining就会特别小，可能会小于from
+            // 我们把这两种情况分别讨论一下
+            int max = Math.min(from.remaining(), to.remaining());
+            // 如果from有数据，那么把这些数据转移到to里面去
+            if (max > 0) {
+                // 记录一下from的limit  为什么呢？
+                int fromLimit = from.limit();
+                // 把from的limit增加到
+                from.limit(from.position() + max);
+                to.put(from);
+                from.limit(fromLimit);
+            }
+            return max;
         }
 
         public void setPoller(Poller poller) {
