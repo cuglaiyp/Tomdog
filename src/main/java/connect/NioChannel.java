@@ -1,5 +1,7 @@
 package connect;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class NioChannel {
@@ -31,5 +33,9 @@ public class NioChannel {
 
     public void setNioChannelWrapper(NioEndpoint.NioChannelWrapper nioChannelWrapper) {
         this.nioChannelWrapper = nioChannelWrapper;
+    }
+
+    public int read(ByteBuffer dst) throws IOException {
+        return socketChannel.read(dst);
     }
 }

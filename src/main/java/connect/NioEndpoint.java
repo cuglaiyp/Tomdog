@@ -235,11 +235,63 @@ public class NioEndpoint{
         // 不是很懂为什么这个方法是放在这个类中。
         // TODO read方法 将SocketBufferHandler中readBuffer中的数据读取到我们指定的byte数组中，如果readBuffer中没有数据，那么就去socket中去读取数据。
         // 这个方法终于到来了
-        public int read(boolean block, ByteBuffer byteBuffer) {
-            int nRead = populateReadBuffer(byteBuffer);
-            return 0;
+
+        /**
+         * 将channel中的数据读到byteBuffer中
+         * @param block
+         * @param to 目标buffer
+         * @return nRead表示有多少数据填充到了to里面
+         */
+        public int read(boolean block, ByteBuffer to) throws IOException {
+            int nRead = populateReadBuffer(to);
+            // 如果转移了数据，那么就返回转移的量
+            if(nRead > 0) return nRead;
+            // 没有返回说明没有转移数据，两个原因：
+            //      1.SocketBufferHandler中的readBuffer没有数据，那么就需要去channel中拿
+            //      2.to中的数据是满的，没有容量
+            SocketBufferHandler socketBufferHandler = nioChannel.getSocketBufferHandler();
+            int limit = socketBufferHandler.getReadBuffer().capacity();
+            // 如果to的剩余空间大于readBuffer的总空间。说明两个问题
+            //      1.to中的数据不是满的，所以前面没有返回的原因是因为1.readBuffer中没有数据
+            //      2.to的剩余容量比readBuffer总空间还要大，那么就没有必要从channel中读数据到readBuffer再转移到to中。直接从channel到to可以一次性拿。
+            if (to.remaining() >= limit){
+                // 本来to的limit等于它的capacity，position等于它的limit。为写模式。
+                // 为什么要把可写容量缩小到与readBuffer等大呢，为什么不直接最大限度的读取呢？
+                to.limit(to.position() + limit);
+                nRead = fillReadBuffer(block, to);
+            }else { // to的剩余空间小于readBuffer的总空间，那么就往readBuffer里面放，再转到to里面
+                nRead = fillReadBuffer(block);
+                if (nRead > 0){
+                    nRead = populateReadBuffer(to);
+                }
+
+            }
+            return nRead;
         }
 
+        private int fillReadBuffer(boolean block) throws IOException {
+            getNioChannel().getSocketBufferHandler().configureReadBufferForWrite();
+            return fillReadBuffer(block, getNioChannel().getSocketBufferHandler().getReadBuffer());
+        }
+
+        private int fillReadBuffer(boolean block, ByteBuffer to) throws IOException {
+            int nRead = 0;
+            NioChannel nioChannel =  getNioChannel();
+            if (block){
+                //TODO 先省略掉阻塞逻辑
+            }else {
+                // read方法会从buffer的position处开始往buffer中填数据直到position的值等于limit
+                nRead = nioChannel.read(to);
+            }
+            return nRead;
+        }
+
+
+        /**
+         * 就封装了一下transfer方法
+         * @param byteBuffer
+         * @return
+         */
         private int populateReadBuffer(ByteBuffer byteBuffer) {
             SocketBufferHandler socketBufferHandler = nioChannel.getSocketBufferHandler();
             // 首先要将socketBufferHandler中的readBuffer切换成读模式
@@ -248,16 +300,23 @@ public class NioEndpoint{
             return nRead;
         }
 
+        /**
+         * 将from中的数据最大限度的转移到to中
+         * @param from
+         * @param to
+         * @return 转移数据量的大小
+         */
         private int transfer(ByteBuffer from, ByteBuffer to) {
             // 这个时候to是写模式，remaining肯定是特别大的；from是读模式，remaining比较小。所以max一定是取到from的值
-            // 什么情况会取到to的remaining呢？那就是当to中还没有使用的数据特别多的时候，这个时候remaining就会特别小，可能会小于from
+            // 什么情况会取到to的remaining呢？那就是当to中还没有使用的数据特别多的时候，这个时候remaining就会特别小，可能会小于from。（to的remaining表示to剩余空间）
             // 我们把这两种情况分别讨论一下
+            // 1.如果取到的是from的remaining，说明from里面可取的数据小于to的可存放空间，那么可以将所有的这些数据（remaining = from.position() + max）从from转移到to
+            // 2.如果取到的是to的remaining，说明from里面可取得数据大于to可存放的空间，那么就只能取to剩余空间这么大的数据（from.position() + max）从from转移到to
             int max = Math.min(from.remaining(), to.remaining());
             // 如果from有数据，那么把这些数据转移到to里面去
             if (max > 0) {
-                // 记录一下from的limit  为什么呢？
+                // 这个地方的逻辑就是在控制从from到底是取所有数据还是to剩余容量的数据。只能说这代码真够优雅，牛！
                 int fromLimit = from.limit();
-                // 把from的limit增加到
                 from.limit(from.position() + max);
                 to.put(from);
                 from.limit(fromLimit);
@@ -289,8 +348,6 @@ public class NioEndpoint{
         public Poller getPoller() {
             return poller;
         }
-
-
     }
 
 

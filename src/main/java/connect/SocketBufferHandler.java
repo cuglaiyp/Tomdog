@@ -47,8 +47,10 @@ public class SocketBufferHandler {
                 // 切换写模式
                 int remaining = readBuffer.remaining();
                 if (remaining == 0) {
+                    // 没有数据就清空buffer,标志位变成写模式的值。
                     readBuffer.clear();
                 } else {
+                    // 有数据还没有使用，就将这些数据移到数组最左边。并将标志位切换为写模式的值
                     readBuffer.compact();
                 }
             } else {
